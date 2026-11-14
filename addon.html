@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MC BASE — Realmsアドオン</title>
+<style>
+:root{color-scheme:dark}body{font-family:system-ui,-apple-system,sans-serif;background:#111c16;color:#e6f5e8;min-height:100vh;margin:0;display:grid;place-items:center}
+main{width:min(92vw,640px);border:1px solid #356043;background:#1c2e21;padding:28px;border-radius:18px;box-sizing:border-box}
+p{line-height:1.8;color:#d2dfd5}button,a.primary{cursor:pointer;border:0;border-radius:9px;background:#9de579;color:#102010;font-size:16px;padding:14px 18px;font-weight:bold;display:inline-block}
+button:disabled{opacity:.65}a{color:#9de579}code{background:#0f2516;padding:3px 6px;border-radius:5px}small{color:#b8cbbd}#status{min-height:28px;margin-top:12px}ol{line-height:1.9}
+</style></head>
+<body><main>
+<h1>🧩 MC BASE Realmsアドオン</h1>
+<p>iPhone・WindowsなどのMinecraft統合版とRealmsで、参加者の同意に基づいて活動回数をゲーム内に記録するアドオンです。Webへの自動送信は行いません。</p>
+<button id="download">MC BASE Realmsアドオン（.mcpack）を生成・保存</button>
+<p id="status" role="status"></p>
+<h2>利用手順</h2>
+<ol><li>上のボタンで <code>.mcpack</code> を保存し、Minecraftでインポートします。</li>
+<li>Realmsのワールド設定 → ビヘイビアーパック → アドオンを有効化します（Realmオーナーのみ）。</li>
+<li>Realmを起動し、チャットで <code>/mcbase:menu</code> を実行します。</li>
+<li>記録を開始し、遊んだあとに「同期コードを表示」を選択します。</li>
+<li>そのコードを <a href="./">MC BASE</a> の「Realms座標共有」へ貼り付けます。</li></ol>
+<p><small>記録対象：設置・破壊回数、最後の設置地点、現在座標、所持品の上位4種類。プレイヤーごとに記録開始を選択します。アドオンの導入前にはRealmのバックアップを作成してください。RealmsからSupabaseへの完全自動同期はできません。</small></p>
+<p><a href="https://github.com/monst-master/mc-base/tree/main/realms/MC_BASE_Realms_Companion_BP" target="_blank" rel="noopener noreferrer">GitHubのソースコードを確認</a></p>
+</main>
+<script src="./assets/jszip.min.js"></script>
+<script>
+document.getElementById('download').addEventListener('click', async ()=>{
+ const btn=document.getElementById('download'),label=document.getElementById('status');
+ btn.disabled=true;label.textContent='アドオンを作成しています...';
+ try{
+  if(typeof JSZip!=='function')throw Error('ZIP生成機能を読み込めませんでした。');
+  const base='./realms/MC_BASE_Realms_Companion_BP/';
+  const [m,j]=await Promise.all(['manifest.json','scripts/main.js'].map(async name=>{
+   const r=await fetch(base+name,{cache:'no-store'});if(!r.ok)throw Error('ファイル取得エラー: '+name+' HTTP '+r.status);return r.text();
+  }));
+  const manifest=JSON.parse(m);
+  if(!manifest.header||!j.includes('MCB1')||!j.includes('mcbase:menu'))throw Error('アドオンの検証に失敗しました');
+  const zip=new JSZip();
+  zip.file('manifest.json',m);zip.file('scripts/main.js',j);
+  const blob=await zip.generateAsync({type:'blob',compression:'DEFLATE',compressionOptions:{level:6}});
+  const objectUrl=URL.createObjectURL(blob);
+  const anchor=document.createElement('a');anchor.href=objectUrl;anchor.download='MC_BASE_Realms_Companion_v1.0.mcpack';
+  document.body.appendChild(anchor);anchor.click();anchor.remove();
+  setTimeout(()=>URL.revokeObjectURL(objectUrl),30000);
+  label.textContent='保存を開始しました。Minecraftでファイルを開いてインポートしてください。';
+ }catch(err){label.textContent='生成できません: '+String(err.message||err);}
+ finally{btn.disabled=false;}
+});
+</script></body></html>
