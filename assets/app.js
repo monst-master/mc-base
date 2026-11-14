@@ -424,15 +424,15 @@ function mcSeedmapUrl(w,embed){
 function mcSeedTerrainPanel(w){
  if(!String(w.seed||'').trim())return '<section class="panel" style="padding:18px"><h3>🗺️ 地形・バイオームマップ</h3><p>シード値が未登録です。ワールド管理からシードを入力するか、統合版セーブデータを読み込んでください。</p></section>';
  const embed=mcSeedmapUrl(w,true),full=mcSeedmapUrl(w,false),version=mcSeedmapVersion(w);
- return \`<section class="panel" style="padding:14px;margin-top:14px">
+ return `<section class="panel" style="padding:14px;margin-top:14px">
  <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px">
   <div><h3 style="margin:0 0 4px">🌍 地形・バイオームマップ（外部シードマップ連携）</h3>
-  <p class="hint" style="margin:0">シード：\${H(w.seed)} / 判定バージョン：\${H(version)} / \${String(w.edition||'').includes('統合版')?'統合版':'Java版'}</p></div>
-  <a class="btn primary" href="\${H(full)}" target="_blank" rel="noopener noreferrer">🗺 詳細地図を開く ↗</a>
+  <p class="hint" style="margin:0">シード：${H(w.seed)} / 判定バージョン：${H(version)} / ${String(w.edition||'').includes('統合版')?'統合版':'Java版'}</p></div>
+  <a class="btn primary" href="${H(full)}" target="_blank" rel="noopener noreferrer">🗺 詳細地図を開く ↗</a>
  </div>
- <iframe title="ワールドの地形・バイオームマップ（外部Seedmap）" src="\${H(embed)}" loading="eager" referrerpolicy="no-referrer" allowfullscreen style="display:block;width:100%;height:560px;max-height:75vh;min-height:360px;border:1px solid #375e43;border-radius:10px;background:#16261c"></iframe>
+ <iframe title="ワールドの地形・バイオームマップ（外部Seedmap）" src="${H(embed)}" loading="eager" referrerpolicy="no-referrer" allowfullscreen style="display:block;width:100%;height:560px;max-height:75vh;min-height:360px;border:1px solid #375e43;border-radius:10px;background:#16261c"></iframe>
  <p class="hint" style="margin:11px 0 0">※ 外部のSeedmapを埋め込んでいます。シード値・バージョン・表示座標が外部サイトのURLに含まれます。地形はワールド生成結果の予測図で、建築物や現在のチェスト位置を表すものではありません。バージョンが違う場合は「詳細地図」で変更してください。地図が表示されない場合も「詳細地図を開く」から確認できます。</p>
- </section>\`;
+ </section>`;
 }
 
 function mapPage(){if(!getWorld())return pageGuard();const w=getWorld(),java=w.edition!=='統合版（Bedrock）';return `${heading('シードマップ','登録したシードから地形・バイオームマップを表示します。登録地点の座標グリッドも従来どおり使えます。')}
