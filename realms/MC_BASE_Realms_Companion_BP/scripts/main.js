@@ -1,4 +1,4 @@
-import { world, system, CustomCommandPermissionLevel } from "@minecraft/server";
+import { world, system, CommandPermissionLevel } from "@minecraft/server";
 import { ActionFormData, ModalFormData, MessageFormData } from "@minecraft/server-ui";
 
 // MC BASE Realms Companion: client/world-side only, NO external HTTP or telemetry upload.
@@ -96,7 +96,8 @@ system.beforeEvents.startup.subscribe(e=>{
   e.customCommandRegistry.registerCommand({
     name:"mcbase:menu",
     description:"MC BASE Realmsの個人記録メニューを開きます",
-    permissionLevel:CustomCommandPermissionLevel.Any
+    permissionLevel:CommandPermissionLevel.Any,
+    cheatsRequired:false
   },origin=>{
    if(!origin.sourceEntity||origin.sourceEntity.typeId!=="minecraft:player")return;
    const p=origin.sourceEntity;
