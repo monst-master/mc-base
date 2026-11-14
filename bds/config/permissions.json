@@ -1,0 +1,17 @@
+{
+  "allowed_modules": [
+    "@minecraft/server",
+    "@minecraft/server-net",
+    "@minecraft/server-admin"
+  ],
+  "module_permissions": {
+    "@minecraft/server-net": {
+      "allowed_uris": [
+        "https://fxcwvopjrbpknvffyfgw.supabase.co/"
+      ],
+      "force_https": true,
+      "max_body_bytes": 65536,
+      "max_concurrent_requests": 2
+    }
+  }
+}
