@@ -699,7 +699,7 @@ actionHandlers['live-name']=async e=>{if(!isOwner())return;const name=e.closest(
 setInterval(()=>{if(activeWorkspace&&['live','map','atlas'].includes(page))liveRefresh();},12000);
 
 /* Realms manual sharing; NO access to Realm game server / real-time API. */
-const REALMS={locations:[],activity:[],key:'',busy:false};
+const REALMS={locations:[],activity:[],materials:[],stats:null,key:'',busy:false};
 function realmsPage(){
  if(!getWorld())return pageGuard();
  const owner=isOwner();
@@ -716,7 +716,7 @@ function realmsPage(){
  +'<label>内容<textarea name="detail" maxlength="300" required rows="3" placeholder="例：ネザー要塞を発見"></textarea></label>'
  +'<button class="btn primary" type="submit">活動を記録</button></form>'
  +(owner?'<button style="margin-top:12px" class="btn" data-action="realms-new-building">＋ 建築物の座標をマップへ登録</button>':'')
- +'</section></div><section class="panel" style="padding:16px;margin-top:16px"><h3>🧭 共有されている座標</h3><small id="realmsStamp">読み込み中</small><div id="realmsRows"></div><h3>📜 活動履歴</h3><div id="realmsLogs"></div></section>';
+ +'</section></div>'+realmsAddonPanel()+'<section class="panel" style="padding:16px;margin-top:16px"><h3>🧭 共有されている座標</h3><small id="realmsStamp">読み込み中</small><div id="realmsRows"></div><h3>📜 活動履歴</h3><div id="realmsLogs"></div></section>';
 }
 function realmsAgo(t){const d=Math.max(0,Math.floor((Date.now()-Date.parse(t))/60000));return Number.isFinite(d)?d<60?d+'分前':Math.floor(d/60)+'時間前':'不明';}
 function realmsRender(){
@@ -727,6 +727,7 @@ function realmsRender(){
   if(mine&&form&&!form.dataset.prefilled){for(const field of ['player_name','dimension','x','y','z'])form.elements.namedItem(field).value=mine[field];form.elements.namedItem('share_enabled').checked=mine.share_enabled;form.dataset.prefilled='1';}
   const stamp=document.getElementById('realmsStamp');if(stamp)stamp.textContent='クラウド読込：'+new Date().toLocaleTimeString('ja-JP');
  }
+ const stock=document.getElementById('realmsAddonMaterials');if(stock){const mine=REALMS.materials.filter(x=>x.user_id===session.user.id);stock.innerHTML=mine.map(x=>'<div class="recent-row"><code>'+H(x.item_id)+'</code><strong>'+x.quantity+'個</strong></div>').join('')||'<p class="hint">まだアドオンから資材データを同期していません。</p>';const n=document.getElementById('realmsAddonStats');if(n)n.textContent=REALMS.stats?'これまでの記録：設置 '+REALMS.stats.blocks_placed+' / 破壊 '+REALMS.stats.blocks_broken:'アドオン同期はまだありません。';}
  if(logs)logs.innerHTML=REALMS.activity.map(a=>'<div class="recent-row"><span><b>'+H(a.category)+'</b> '+H(a.detail)+'</span><small>'+realmsAgo(a.created_at)+'</small></div>').join('')||'<p class="hint">活動の記録はありません。</p>';
 }
 async function realmsRefresh(){
@@ -738,17 +739,20 @@ async function realmsRefresh(){
   const ws=activeWorkspace.id,w=db.selectedWorld;
   const a=await Promise.all([
    cloud.from('mc_realms_positions').select('user_id,player_name,dimension,x,y,z,share_enabled,updated_at').eq('workspace_id',ws).eq('world_id',w).order('updated_at',{ascending:false}).limit(60),
-   cloud.from('mc_realms_activity').select('id,user_id,category,detail,created_at').eq('workspace_id',ws).eq('world_id',w).order('created_at',{ascending:false}).limit(60)
+   cloud.from('mc_realms_activity').select('id,user_id,category,detail,x,y,z,created_at').eq('workspace_id',ws).eq('world_id',w).order('created_at',{ascending:false}).limit(60),
+   cloud.from('mc_realms_addon_inventory').select('user_id,player_name,item_id,quantity,updated_at').eq('workspace_id',ws).eq('world_id',w).limit(120),
+   cloud.from('mc_realms_addon_sync').select('blocks_placed,blocks_broken,updated_at').eq('workspace_id',ws).eq('world_id',w).eq('user_id',session.user.id).maybeSingle()
   ]);
-  if(a[0].error||a[1].error)throw a[0].error||a[1].error;
+  if(a.some(x=>x.error))throw a.find(x=>x.error).error;
   if(REALMS.key!==key)return;
-  REALMS.locations=a[0].data||[];REALMS.activity=a[1].data||[];
+  REALMS.locations=a[0].data||[];REALMS.activity=a[1].data||[];REALMS.materials=a[2].data||[];REALMS.stats=a[3].data||null;
   realmsRender();if(page==='map')drawMap();if(page==='atlas')uDrawAtlas();
  }catch(err){const e=document.getElementById('realmsRows');if(e)e.textContent='読み込みエラー：'+String(err.message||err);}
  finally{REALMS.busy=false;}
 }
 function realmsOverlay(ctx,px,py,dimension,W,H){
  if(REALMS.key!==activeWorkspace?.id+':'+db.selectedWorld)return;
+ for(const a of REALMS.activity.filter(a=>a.category==='建築'&&Number.isInteger(a.x)&&Number.isInteger(a.z))){const x=px(a.x),y=py(a.z);if(x<0||y<0||x>W||y>H)continue;ctx.fillStyle='#ffbd63';ctx.fillRect(x-5,y-5,10,10);ctx.font='bold 11px sans-serif';ctx.fillText(String(a.detail||'建築地点').slice(0,12),x+9,y-9);}
  for(const p of REALMS.locations.filter(x=>x.share_enabled&&x.dimension===dimension)){
   const x=px(p.x),y=py(p.z);if(x<0||y<0||x>W||y>H)continue;
   ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle='#9de8ff';ctx.fill();
@@ -787,6 +791,88 @@ document.addEventListener('submit',e=>{
  if(e.target.id==='realmsLogForm')void realmsSaveLog(e);
 });
 setInterval(()=>{if(activeWorkspace&&['realms','map','atlas'].includes(page))void realmsRefresh();},12000);
+
+
+function realmsAddonPanel(){
+ return '<section class="panel" style="padding:17px;margin:16px 0"><h3>🧩 Realmsアドオンとの連携</h3>'
+ +'<p class="hint">Realms内のアドオンで <code>/mcbase:menu</code> →「同期コードを表示」を選び、出力された <code>MCB1|...</code> の文字列をここへ貼り付けます。外部への自動送信ではありません。</p>'
+ +'<form id="realmsAddonForm"><label>アドオン同期コード<textarea id="realmsAddonCode" rows="3" maxlength="1800" required placeholder="MCB1|プレイヤー名|..."></textarea></label>'
+ +'<label style="display:flex;gap:8px;margin:10px 0"><input type="checkbox" id="realmsAddonShare" style="width:auto">現在地・所持品・建築活動地点を承認済みメンバーに共有する</label>'
+ +'<p class="hint">チェックなしなら位置・所持品は本人のみ閲覧でき、活動履歴には座標を掲載しません。</p>'
+ +'<button class="btn primary" type="submit">📥 アドオン記録をMC BASEへ反映</button></form>'
+ +'<div id="realmsAddonStats" class="hint" style="margin-top:10px">アドオン未同期</div><h4>📦 同期した所持品（自分のデータ）</h4><div id="realmsAddonMaterials"></div></section>';
+}
+function realmsAddonInt(v,minimum=-30000000,maximum=30000000){
+ if(!/^-?\d+$/.test(v)||String(v).length>12)throw Error('同期コードの整数データが不正です');
+ const n=Number(v);if(!Number.isSafeInteger(n)||n<minimum||n>maximum)throw Error('同期コードの数値が範囲外です');
+ return n;
+}
+function realmsAddonParse(raw){
+ const a=raw.trim().split('|');
+ if(a.length!==13||a[0]!=='MCB1')throw Error('MCB1形式の同期コードを貼り付けてください');
+ const player_name=decodeURIComponent(a[1]).trim().slice(0,80);
+ if(!player_name)throw Error('プレイヤー名が空です');
+ const dimension={'0':'オーバーワールド','1':'ネザー','2':'エンド'}[a[2]];
+ if(!dimension)throw Error('次元コードが不正です');
+ const x=realmsAddonInt(a[3]),y=realmsAddonInt(a[4]),z=realmsAddonInt(a[5]);
+ const placed=realmsAddonInt(a[6],0,99999999),broken=realmsAddonInt(a[7],0,99999999);
+ const items=[];
+ if(a[8]){
+  for(const pair of a[8].split(',').slice(0,4)){
+   const sep=pair.lastIndexOf('~');
+   if(sep<=0)throw Error('資材コードが不正です');
+   const id=decodeURIComponent(pair.slice(0,sep));
+   if(!/^[a-z0-9_.-]+:[a-z0-9_./-]+$/i.test(id)||id.length>100)throw Error('資材IDが不正です');
+   items.push({item_id:id,quantity:realmsAddonInt(pair.slice(sep+1),0,1000000)});
+  }
+ }
+ let last=null;
+ if(a[9]||a[10]||a[11]){
+  if(!a[9]||!a[10]||!a[11])throw Error('建築地点が不正です');
+  last={x:realmsAddonInt(a[9]),y:realmsAddonInt(a[10]),z:realmsAddonInt(a[11])};
+ }
+ const site=decodeURIComponent(a[12]).trim().slice(0,28);
+ return {player_name,dimension,x,y,z,placed,broken,items,last,site};
+}
+async function realmsAddonImport(e){
+ e.preventDefault();
+ if(!activeWorkspace||!session)return;
+ const button=e.target.querySelector('button[type=submit]');
+ if(button)button.disabled=true;
+ try{
+  const code=document.getElementById('realmsAddonCode').value;
+  const p=realmsAddonParse(code);
+  const share=document.getElementById('realmsAddonShare').checked;
+  const base={workspace_id:activeWorkspace.id,world_id:db.selectedWorld,user_id:session.user.id};
+  const prev=await cloud.from('mc_realms_addon_sync').select('blocks_placed,blocks_broken').eq('workspace_id',base.workspace_id).eq('world_id',base.world_id).eq('user_id',base.user_id).maybeSingle();
+  if(prev.error)throw prev.error;
+  const placedDelta=Math.max(0,p.placed-Number(prev.data?.blocks_placed||0));
+  const brokenDelta=Math.max(0,p.broken-Number(prev.data?.blocks_broken||0));
+  const when=new Date().toISOString();
+  const pos=await cloud.from('mc_realms_positions').upsert({...base,player_name:p.player_name,dimension:p.dimension,x:p.x,y:p.y,z:p.z,share_enabled:share,updated_at:when},{onConflict:'workspace_id,world_id,user_id'});
+  if(pos.error)throw pos.error;
+  const del=await cloud.from('mc_realms_addon_inventory').delete().eq('workspace_id',base.workspace_id).eq('world_id',base.world_id).eq('user_id',base.user_id);
+  if(del.error)throw del.error;
+  if(p.items.length){
+   const ins=await cloud.from('mc_realms_addon_inventory').insert(p.items.map(item=>({...base,player_name:p.player_name,...item,share_enabled:share,updated_at:when})));
+   if(ins.error)throw ins.error;
+  }
+  if(placedDelta||brokenDelta){
+   let detail='アドオン同期：設置 '+placedDelta+'・破壊 '+brokenDelta;
+   if(p.site)detail+=' / '+p.site;
+   const activity=await cloud.from('mc_realms_activity').insert({...base,category:'建築',detail,
+    x:share&&p.last?p.last.x:null,y:share&&p.last?p.last.y:null,z:share&&p.last?p.last.z:null});
+   if(activity.error)throw activity.error;
+  }
+  const state=await cloud.from('mc_realms_addon_sync').upsert({...base,blocks_placed:p.placed,blocks_broken:p.broken,updated_at:when},{onConflict:'workspace_id,world_id,user_id'});
+  if(state.error)throw state.error;
+  toast('アドオン記録を保存しました（設置 +'+placedDelta+' / 破壊 +'+brokenDelta+'）');
+  document.getElementById('realmsAddonCode').value='';
+  await realmsRefresh();
+ }catch(err){toast('アドオン同期失敗：'+String(err.message||err).slice(0,140));}
+ finally{if(button)button.disabled=false;}
+}
+document.addEventListener('submit',e=>{if(e.target.id==='realmsAddonForm')void realmsAddonImport(e);});
 
 bootCloud();
 })();
