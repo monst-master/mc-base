@@ -704,6 +704,7 @@ function realmsPage(){
  if(!getWorld())return pageGuard();
  const owner=isOwner();
  return heading('Realms共有','位置を自分で登録し、承認されたメンバーとクラウドで共有します。')
+ +'<div style="padding:12px 0"><a class="btn primary" href="./addon.html" target="_blank" rel="noopener">🧩 Realmsアドオンを入手する</a></div>'
  +'<div class="u-notice"><b>🛰️ Realmsモード</b>：ゲーム内の位置や所持品を自動取得するものではありません。MC BASEに登録した座標は、共有を許可した場合のみ他の承認済みメンバーの画面・内部マップに表示されます。</div>'
  +'<div class="twocol"><section class="panel" style="padding:16px"><h3>📍 自分の現在地を報告</h3>'
  +'<form id="realmsPositionForm"><label>プレイヤー名<input name="player_name" maxlength="80" required placeholder="Minecraftの名前"></label>'
@@ -727,7 +728,7 @@ function realmsRender(){
   if(mine&&form&&!form.dataset.prefilled){for(const field of ['player_name','dimension','x','y','z'])form.elements.namedItem(field).value=mine[field];form.elements.namedItem('share_enabled').checked=mine.share_enabled;form.dataset.prefilled='1';}
   const stamp=document.getElementById('realmsStamp');if(stamp)stamp.textContent='クラウド読込：'+new Date().toLocaleTimeString('ja-JP');
  }
- const stock=document.getElementById('realmsAddonMaterials');if(stock){const mine=REALMS.materials.filter(x=>x.user_id===session.user.id);stock.innerHTML=mine.map(x=>'<div class="recent-row"><code>'+H(x.item_id)+'</code><strong>'+x.quantity+'個</strong></div>').join('')||'<p class="hint">まだアドオンから資材データを同期していません。</p>';const n=document.getElementById('realmsAddonStats');if(n)n.textContent=REALMS.stats?'これまでの記録：設置 '+REALMS.stats.blocks_placed+' / 破壊 '+REALMS.stats.blocks_broken:'アドオン同期はまだありません。';}
+ const stock=document.getElementById('realmsAddonMaterials');if(stock){const available=REALMS.materials;stock.innerHTML=available.map(x=>'<div class="recent-row"><span>'+H(x.player_name)+' <code>'+H(x.item_id)+'</code></span><strong>'+x.quantity+'個</strong></div>').join('')||'<p class="hint">まだアドオンから共有された資材データはありません。</p>';const n=document.getElementById('realmsAddonStats');if(n)n.textContent=REALMS.stats?'これまでの記録：設置 '+REALMS.stats.blocks_placed+' / 破壊 '+REALMS.stats.blocks_broken:'アドオン同期はまだありません。';}
  if(logs)logs.innerHTML=REALMS.activity.map(a=>'<div class="recent-row"><span><b>'+H(a.category)+'</b> '+H(a.detail)+'</span><small>'+realmsAgo(a.created_at)+'</small></div>').join('')||'<p class="hint">活動の記録はありません。</p>';
 }
 async function realmsRefresh(){
@@ -782,7 +783,11 @@ async function realmsSaveLog(e){
 actionHandlers['realms-hide']=async()=>{
  if(!session||!activeWorkspace)return;
  const {error}=await cloud.from('mc_realms_positions').update({share_enabled:false,updated_at:new Date().toISOString()}).eq('workspace_id',activeWorkspace.id).eq('world_id',db.selectedWorld).eq('user_id',session.user.id);
- if(error)return toast(error.message);const f=document.getElementById('realmsPositionForm');if(f)f.elements.namedItem('share_enabled').checked=false;
+ if(error)return toast(error.message);
+ const inv=await cloud.from('mc_realms_addon_inventory').update({share_enabled:false}).eq('workspace_id',activeWorkspace.id).eq('world_id',db.selectedWorld).eq('user_id',session.user.id);
+ if(inv.error)return toast(inv.error.message);
+ const rm=await cloud.from('mc_realms_activity').delete().eq('workspace_id',activeWorkspace.id).eq('world_id',db.selectedWorld).eq('user_id',session.user.id).eq('category','建築').like('detail','アドオン同期：%');
+ if(rm.error)return toast(rm.error.message);const f=document.getElementById('realmsPositionForm');if(f)f.elements.namedItem('share_enabled').checked=false;
  toast('位置共有をオフにしました');await realmsRefresh();
 };
 actionHandlers['realms-new-building']=()=>{if(!isOwner())return toast('管理者のみ座標登録ができます');changePage('coords');openEditor('coords');};
@@ -800,7 +805,7 @@ function realmsAddonPanel(){
  +'<label style="display:flex;gap:8px;margin:10px 0"><input type="checkbox" id="realmsAddonShare" style="width:auto">現在地・所持品・建築活動地点を承認済みメンバーに共有する</label>'
  +'<p class="hint">チェックなしなら位置・所持品は本人のみ閲覧でき、活動履歴には座標を掲載しません。</p>'
  +'<button class="btn primary" type="submit">📥 アドオン記録をMC BASEへ反映</button></form>'
- +'<div id="realmsAddonStats" class="hint" style="margin-top:10px">アドオン未同期</div><h4>📦 同期した所持品（自分のデータ）</h4><div id="realmsAddonMaterials"></div></section>';
+ +'<div id="realmsAddonStats" class="hint" style="margin-top:10px">アドオン未同期</div><h4>📦 同期した所持品（自分と共有許可済みメンバー）</h4><div id="realmsAddonMaterials"></div></section>';
 }
 function realmsAddonInt(v,minimum=-30000000,maximum=30000000){
  if(!/^-?\d+$/.test(v)||String(v).length>12)throw Error('同期コードの整数データが不正です');
@@ -856,6 +861,11 @@ async function realmsAddonImport(e){
   if(p.items.length){
    const ins=await cloud.from('mc_realms_addon_inventory').insert(p.items.map(item=>({...base,player_name:p.player_name,...item,share_enabled:share,updated_at:when})));
    if(ins.error)throw ins.error;
+  }
+  if(!share){
+   // Revoking sharing also removes previously shared map points from addon imports.
+   const {error:revErr}=await cloud.from('mc_realms_activity').delete().eq('workspace_id',base.workspace_id).eq('world_id',base.world_id).eq('user_id',base.user_id).eq('category','建築').like('detail','アドオン同期：%');
+   if(revErr)throw revErr;
   }
   if(placedDelta||brokenDelta){
    let detail='アドオン同期：設置 '+placedDelta+'・破壊 '+brokenDelta;
