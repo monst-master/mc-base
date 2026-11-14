@@ -1,0 +1,7 @@
+{
+  "mcbase_workspace_id": "3c3d9d86-56f5-4545-a107-a6e64270f632",
+  "mcbase_world_id": "0f578d34-0780-4afe-bbd0-558c9b2df84b",
+  "mcbase_endpoint": "https://fxcwvopjrbpknvffyfgw.supabase.co/functions/v1/mc-live-ingest",
+  "mcbase_share_positions": true,
+  "mcbase_share_inventory": true
+}
