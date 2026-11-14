@@ -395,10 +395,52 @@ async function checkLinkedFolder(silent){if(!isOwner()||!linkedFolder||folderWat
  applyWorldMetadata(w,meta);recordActivity(`PCフォルダのワールド情報を再読み込み`);save();if(page==='device')render();if(!silent)toast('フォルダの最新ワールド情報を共有保存します。');
  }catch(e){stopFolderWatcher(false);toast('フォルダ連携を停止しました：'+e.message);if(page==='device')render();}finally{folderWatchBusy=false;}
 }
-function mapPage(){if(!getWorld())return pageGuard();const w=getWorld(),java=w.edition!=='統合版（Bedrock）';return `${heading('シードマップ','管理人が設定したシード値を共有。Java版スライムチャンクを計算・確認済み地点を重ねて表示します。')}
+// Actual terrain/biome map is provided by the third-party Seedmap embed.
+// A seed alone does not create terrain in MC BASE's schematic canvas.
+// Links include only the world seed, selected version, and viewing coordinates.
+function mcSeedmapVersion(w){
+ const bedrock=String(w.edition||'').includes('統合版');
+ const v=String(w.version||'').trim();
+ if(bedrock){
+  if(/^1\.21(?:\.|$)/.test(v))return 'be1.21.130';
+  if(/^26\.50(?:\.|$)/.test(v))return 'be26.50';
+  return 'be26.50';
+ }
+ return '26.3';
+}
+function mcSeedmapUrl(w,embed){
+ const seed=String(w.seed||'').trim();
+ if(!seed)return '';
+ const u=new URL(embed?'https://seedmap.etnx.sh/embed':'https://seedmap.etnx.sh/');
+ u.searchParams.set('seed',seed);
+ u.searchParams.set('v',mcSeedmapVersion(w));
+ const spawn=w.snapshot?.spawn;
+ const x=Number(spawn?.x), z=Number(spawn?.z);
+ u.searchParams.set('x',Number.isFinite(x)&&Math.abs(x)<30000001?String(Math.trunc(x)):'0');
+ u.searchParams.set('z',Number.isFinite(z)&&Math.abs(z)<30000001?String(Math.trunc(z)):'0');
+ u.searchParams.set('zoom','-3');
+ return u.href;
+}
+function mcSeedTerrainPanel(w){
+ if(!String(w.seed||'').trim())return '<section class="panel" style="padding:18px"><h3>🗺️ 地形・バイオームマップ</h3><p>シード値が未登録です。ワールド管理からシードを入力するか、統合版セーブデータを読み込んでください。</p></section>';
+ const embed=mcSeedmapUrl(w,true),full=mcSeedmapUrl(w,false),version=mcSeedmapVersion(w);
+ return \`<section class="panel" style="padding:14px;margin-top:14px">
+ <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:9px">
+  <div><h3 style="margin:0 0 4px">🌍 地形・バイオームマップ（外部シードマップ連携）</h3>
+  <p class="hint" style="margin:0">シード：\${H(w.seed)} / 判定バージョン：\${H(version)} / \${String(w.edition||'').includes('統合版')?'統合版':'Java版'}</p></div>
+  <a class="btn primary" href="\${H(full)}" target="_blank" rel="noopener noreferrer">🗺 詳細地図を開く ↗</a>
+ </div>
+ <iframe title="ワールドの地形・バイオームマップ（外部Seedmap）" src="\${H(embed)}" loading="eager" referrerpolicy="no-referrer" allowfullscreen style="display:block;width:100%;height:560px;max-height:75vh;min-height:360px;border:1px solid #375e43;border-radius:10px;background:#16261c"></iframe>
+ <p class="hint" style="margin:11px 0 0">※ 外部のSeedmapを埋め込んでいます。シード値・バージョン・表示座標が外部サイトのURLに含まれます。地形はワールド生成結果の予測図で、建築物や現在のチェスト位置を表すものではありません。バージョンが違う場合は「詳細地図」で変更してください。地図が表示されない場合も「詳細地図を開く」から確認できます。</p>
+ </section>\`;
+}
+
+function mapPage(){if(!getWorld())return pageGuard();const w=getWorld(),java=w.edition!=='統合版（Bedrock）';return `${heading('シードマップ','登録したシードから地形・バイオームマップを表示します。登録地点の座標グリッドも従来どおり使えます。')}
 <div class="panel" style="padding:15px 20px;margin-bottom:16px"><span class="pill ${isOwner()?'done':'blue'}">${isOwner()?'✎ 管理人：シード編集可':'🔒 閲覧者：シード編集不可'}</span><p style="font-size:12px;color:#cbd9ce">🌍 ${H(w.name)}　/　${H(w.edition||'Java版')}　/　Version: ${H(w.version||'未設定')}</p><div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap"><strong style="overflow-wrap:anywhere">🔑 ${w.seed?H(w.seed):'シード未登録'}</strong><button class="btn sm" data-action="copy-seed" ${!w.seed?'disabled':''}>コピー</button>${isOwner()?`<button class="btn sm" data-action="edit" data-kind="worlds" data-id="${H(w.id)}">✎ シード値を設定</button>`:''}</div></div>
-<div class="map-layout"><section class="panel map-pane"><div class="map-controls"><button class="btn sm" data-action="map-pan" data-dx="-7" data-dz="0">◀ 西</button><button class="btn sm" data-action="map-pan" data-dx="0" data-dz="-7">▲ 北</button><button class="btn sm" data-action="map-pan" data-dx="0" data-dz="7">▼ 南</button><button class="btn sm" data-action="map-pan" data-dx="7" data-dz="0">東 ▶</button><button class="btn sm" data-action="map-zoom" data-step="-6">−</button><button class="btn sm" data-action="map-zoom" data-step="6">＋</button></div><div class="map-controls"><input id="mapJumpX" type="number" placeholder="X座標" style="width:112px;padding:8px;color:white;border:1px solid #3c6142;border-radius:7px;background:#13241a"><input id="mapJumpZ" type="number" placeholder="Z座標" style="width:112px;padding:8px;color:white;border:1px solid #3c6142;border-radius:7px;background:#13241a"><button class="btn sm" data-action="map-jump">座標へ移動</button></div><p class="map-coord" id="mapPosition">地図を読み込み中...</p><canvas id="mapCanvas" class="map-canvas" width="840" height="580" aria-label="スライムチャンクと登録済み座標の模式マップ"></canvas><div class="map-key"><span><i class="map-swatch" style="background:#4d9851"></i>Java版スライムチャンク</span><span><i class="map-swatch" style="background:#efbe74"></i>登録座標</span><span><i class="map-swatch" style="background:#92c9ff"></i>原点</span></div><p class="help">※ このマップは<strong>模式図</strong>です。実際の地形やバイオームを生成した画像ではありません。Java版のみスライムチャンクをシード値から正確に判定します。</p></section>
-<section class="panel map-side"><h3>🌳 バイオーム・構造物・スポナー</h3><p>実際のバイオーム分布、スポナー候補、村・要塞などは外部の専用シードマップで確認できます。リンク先でシード値・エディション・バージョンを設定してください。</p><button class="btn primary" data-action="open-chunkbase">🗺 Chunkbaseを開く ↗</button><button class="btn" data-action="copy-seed" ${!w.seed?'disabled':''}>📋 シード値をコピー</button><div class="detail-hint">スポナーはシード予測だけでは外れる場合があります。現地で発見した座標を「座標メモ」の種類「スポナー」として登録してください。</div><h3 style="margin-top:20px">📍 登録済み地点</h3><div style="max-height:290px;overflow-y:auto">${records('coords').filter(x=>x.dimension==='オーバーワールド').slice(0,30).map(x=>`<p style="border-bottom:1px solid #304437;padding:4px 0">${x.category==='スポナー'?'🕷️':x.category==='バイオーム'?'🌳':'📍'} <strong>${H(x.name)}</strong><br>X:${H(x.x)} Z:${H(x.z)} ・ ${H(x.category||'地点')}<br><button class="btn sm" data-action="map-focus" data-x="${H(x.x)}" data-z="${H(x.z)}">地図で表示</button></p>`).join('')||'<p>登録座標はありません。</p>'}</div>${isOwner()?'<button class="btn" data-action="map-new-coord">＋ 確認済み座標を登録</button>':''}<p style="font-size:11px;margin-top:20px">${!java?'統合版のスライムチャンクはJava版とは計算方法が違うため、この模式図では表示しません。':!w.seed?'シード値が未登録のため、計算結果を表示できません。':'スライム判定はJava版のシード計算式に基づきます。'}</p></section></div>`}
+${mcSeedTerrainPanel(w)}
+<details class="panel" style="padding:14px;margin-top:16px"><summary style="cursor:pointer;font-weight:700;padding:6px 2px">📍 座標グリッド・登録地点・スライムチャンクの模式図を開く</summary>
+<div class="map-layout" style="margin-top:14px"><section class="panel map-pane"><div class="map-controls"><button class="btn sm" data-action="map-pan" data-dx="-7" data-dz="0">◀ 西</button><button class="btn sm" data-action="map-pan" data-dx="0" data-dz="-7">▲ 北</button><button class="btn sm" data-action="map-pan" data-dx="0" data-dz="7">▼ 南</button><button class="btn sm" data-action="map-pan" data-dx="7" data-dz="0">東 ▶</button><button class="btn sm" data-action="map-zoom" data-step="-6">−</button><button class="btn sm" data-action="map-zoom" data-step="6">＋</button></div><div class="map-controls"><input id="mapJumpX" type="number" placeholder="X座標" style="width:112px;padding:8px;color:white;border:1px solid #3c6142;border-radius:7px;background:#13241a"><input id="mapJumpZ" type="number" placeholder="Z座標" style="width:112px;padding:8px;color:white;border:1px solid #3c6142;border-radius:7px;background:#13241a"><button class="btn sm" data-action="map-jump">座標へ移動</button></div><p class="map-coord" id="mapPosition">地図を読み込み中...</p><canvas id="mapCanvas" class="map-canvas" width="840" height="580" aria-label="スライムチャンクと登録済み座標の模式マップ"></canvas><div class="map-key"><span><i class="map-swatch" style="background:#4d9851"></i>Java版スライムチャンク</span><span><i class="map-swatch" style="background:#efbe74"></i>登録座標</span><span><i class="map-swatch" style="background:#92c9ff"></i>原点</span></div><p class="help">※ このマップは<strong>模式図</strong>です。実際の地形やバイオームを生成した画像ではありません。Java版のみスライムチャンクをシード値から正確に判定します。</p></section>
+<section class="panel map-side"><h3>🌳 バイオーム・構造物・スポナー</h3><p>実際のバイオーム分布、スポナー候補、村・要塞などは外部の専用シードマップで確認できます。リンク先でシード値・エディション・バージョンを設定してください。</p><button class="btn primary" data-action="open-chunkbase">🗺 Chunkbaseを開く ↗</button><button class="btn" data-action="copy-seed" ${!w.seed?'disabled':''}>📋 シード値をコピー</button><div class="detail-hint">スポナーはシード予測だけでは外れる場合があります。現地で発見した座標を「座標メモ」の種類「スポナー」として登録してください。</div><h3 style="margin-top:20px">📍 登録済み地点</h3><div style="max-height:290px;overflow-y:auto">${records('coords').filter(x=>x.dimension==='オーバーワールド').slice(0,30).map(x=>`<p style="border-bottom:1px solid #304437;padding:4px 0">${x.category==='スポナー'?'🕷️':x.category==='バイオーム'?'🌳':'📍'} <strong>${H(x.name)}</strong><br>X:${H(x.x)} Z:${H(x.z)} ・ ${H(x.category||'地点')}<br><button class="btn sm" data-action="map-focus" data-x="${H(x.x)}" data-z="${H(x.z)}">地図で表示</button></p>`).join('')||'<p>登録座標はありません。</p>'}</div>${isOwner()?'<button class="btn" data-action="map-new-coord">＋ 確認済み座標を登録</button>':''}<p style="font-size:11px;margin-top:20px">${!java?'統合版のスライムチャンクはJava版とは計算方法が違うため、この模式図では表示しません。':!w.seed?'シード値が未登録のため、計算結果を表示できません。':'スライム判定はJava版のシード計算式に基づきます。'}</p></section></div></details>`}
 function minecraftSeed(raw){const v=String(raw||'').trim();if(!v)return null;if(/^-?\d+$/.test(v)){try{return BigInt.asIntN(64,BigInt(v));}catch{return null;}}let h=0;for(let i=0;i<v.length;i++){h=(Math.imul(31,h)+v.charCodeAt(i))|0;}return BigInt(h);}
 function isSlime(seed,cx,cz){const a=BigInt(cx),b=BigInt(cz),i32=v=>BigInt.asIntN(32,v),mask=(1n<<48n)-1n;
  const combined=(seed+i32(a*a*0x4c1906n)+i32(a*0x5ac0dbn)+i32(b*b)*0x4307a7n+i32(b*0x5f24fn))^0x3ad8025fn;
