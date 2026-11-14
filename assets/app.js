@@ -869,7 +869,7 @@ async function realmsAddonImport(e){
   }
   if(placedDelta||brokenDelta){
    let detail='アドオン同期：設置 '+placedDelta+'・破壊 '+brokenDelta;
-   if(p.site)detail+=' / '+p.site;
+   if(p.site&&share)detail+=' / '+p.site;
    const activity=await cloud.from('mc_realms_activity').insert({...base,category:'建築',detail,
     x:share&&p.last?p.last.x:null,y:share&&p.last?p.last.y:null,z:share&&p.last?p.last.z:null});
    if(activity.error)throw activity.error;
