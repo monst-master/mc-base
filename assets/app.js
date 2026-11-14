@@ -1,7 +1,7 @@
 (() => {
 'use strict';
 const KEY='mc_base_v1';
-const PAGES=[['dashboard','🏡','ダッシュボード'],['worlds','🌍','ワールド管理'],['coords','📍','座標メモ'],['projects','🧱','建築・タスク'],['items','📦','資材管理'],['live','📡','サーバー活動・現在地'],['villagers','🧑‍🌾','村人・取引'],['farms','🌾','トラップ・装置'],['goals','🏆','進捗・目標'],['machines','🏭','大型装置レシピ'],['enchants','✨','おすすめエンチャント'],['tools','🧮','便利ツール'],['map','🗺️','シードマップ'],['atlas','🛰️','統合版ワールド地図'],['demo','🎬','装置デモ'],['unichat','💬','統合チャット'],['device','📲','スマホ・PC連携'],['settings','⚙️','設定・バックアップ']];
+const PAGES=[['dashboard','🏡','ダッシュボード'],['worlds','🌍','ワールド管理'],['coords','📍','座標メモ'],['projects','🧱','建築・タスク'],['items','📦','資材管理'],['live','📡','サーバー活動・現在地'],['realms','🛰️','Realms座標共有'],['villagers','🧑‍🌾','村人・取引'],['farms','🌾','トラップ・装置'],['goals','🏆','進捗・目標'],['machines','🏭','大型装置レシピ'],['enchants','✨','おすすめエンチャント'],['tools','🧮','便利ツール'],['map','🗺️','シードマップ'],['atlas','🛰️','統合版ワールド地図'],['demo','🎬','装置デモ'],['unichat','💬','統合チャット'],['device','📲','スマホ・PC連携'],['settings','⚙️','設定・バックアップ']];
 const DEFAULT_GOALS=[['序盤','ベッドと拠点を作る'],['序盤','鉄装備を整える'],['序盤','ダイヤモンドを入手する'],['ネザー','ネザーへ進出する'],['ネザー','ブレイズロッドを集める'],['エンド','エンド要塞を発見する'],['エンド','エンダードラゴンを討伐する'],['エンド','エリトラを入手する'],['発展','自動収穫装置を作る'],['発展','ネザライト装備を揃える']];
 const SCHEMA={
  worlds:{label:'ワールド',fields:[['name','ワールド名','text','マイワールド',true],['edition','エディション','select',['Java版','統合版（Bedrock）']],['mode','ゲームモード','select',['サバイバル','クリエイティブ','ハードコア','アドベンチャー']],['seed','シード値','text','任意'],['version','バージョン','text','例：1.21'],['note','メモ','textarea','ワールドの特徴など']]},
@@ -134,7 +134,7 @@ function recordActivity(msg){db.activity.push({worldId:db.selectedWorld,text:msg
 function toast(s){const e=document.getElementById('toast');e.textContent=s;e.classList.add('show');clearTimeout(activeToast);activeToast=setTimeout(()=>e.classList.remove('show'),3100);}
 function changePage(p){page=p;query='';filter='all';mobileMoreOpen=false;render();window.scrollTo({top:0,behavior:'instant'});}
 function worldOptions(){document.getElementById('worldSelect').innerHTML=db.worlds.length?db.worlds.map(w=>`<option value="${H(w.id)}" ${w.id===db.selectedWorld?'selected':''}>${H(w.name)}</option>`).join(''):'<option value="">ワールドなし</option>';}
-function renderNav(){const count={coords:records('coords').length,projects:records('projects').length,items:records('items').length,villagers:records('villagers').length,farms:records('farms').length,machines:records('blueprints').length};document.getElementById('sideNav').innerHTML=PAGES.map(([id,ic,label],i)=>`${id==='dashboard'||id==='machines'?`<div class="nav-label">${id==='dashboard'?'OVERVIEW':'PLANNING & TOOLS'}</div>`:''}<button class="nav-item ${page===id?'active':''}" data-page="${id}"><span class="n-icon">${ic}</span><span>${label}</span>${count[id]!=null?`<span class="n-count">${count[id]}</span>`:''}</button>`).join('');const mobile=[['dashboard','🏡','ホーム'],['coords','📍','座標'],['projects','🧱','建築'],['items','📦','資材'],['worlds','🌍','ワールド'],['more','☰','その他']];document.getElementById('mobileNav').innerHTML=mobile.map(([id,ic,label])=>`<button ${id==='more'?'data-action="mobile-more"':`data-page="${id}"`} class="${page===id?'active':''}"><span>${ic}</span>${label}</button>`).join('');const extra=['live','villagers','farms','goals','machines','enchants','tools','map','atlas','demo','unichat','device','settings','worlds'];const menu=document.getElementById('mobileMore');menu.classList.toggle('open',mobileMoreOpen);menu.innerHTML=extra.map(id=>{const p=PAGES.find(x=>x[0]===id);return `<button data-page="${id}" class="${page===id?'active':''}">${p[1]} ${p[2]}</button>`}).join('');}
+function renderNav(){const count={coords:records('coords').length,projects:records('projects').length,items:records('items').length,villagers:records('villagers').length,farms:records('farms').length,machines:records('blueprints').length};document.getElementById('sideNav').innerHTML=PAGES.map(([id,ic,label],i)=>`${id==='dashboard'||id==='machines'?`<div class="nav-label">${id==='dashboard'?'OVERVIEW':'PLANNING & TOOLS'}</div>`:''}<button class="nav-item ${page===id?'active':''}" data-page="${id}"><span class="n-icon">${ic}</span><span>${label}</span>${count[id]!=null?`<span class="n-count">${count[id]}</span>`:''}</button>`).join('');const mobile=[['dashboard','🏡','ホーム'],['coords','📍','座標'],['projects','🧱','建築'],['items','📦','資材'],['worlds','🌍','ワールド'],['more','☰','その他']];document.getElementById('mobileNav').innerHTML=mobile.map(([id,ic,label])=>`<button ${id==='more'?'data-action="mobile-more"':`data-page="${id}"`} class="${page===id?'active':''}"><span>${ic}</span>${label}</button>`).join('');const extra=['realms','live','villagers','farms','goals','machines','enchants','tools','map','atlas','demo','unichat','device','settings','worlds'];const menu=document.getElementById('mobileMore');menu.classList.toggle('open',mobileMoreOpen);menu.innerHTML=extra.map(id=>{const p=PAGES.find(x=>x[0]===id);return `<button data-page="${id}" class="${page===id?'active':''}">${p[1]} ${p[2]}</button>`}).join('');}
 function heading(title,desc,btn=''){return `<div class="header-row"><div><div class="eyebrow">MC BASE / ${H(page.toUpperCase())}</div><h1 class="page-title">${title}</h1><p class="sub">${desc}</p></div>${btn}</div>`}
 function newBtn(kind,text='新規登録'){return `<button class="btn primary" data-action="new" data-kind="${kind}">＋ ${text}</button>`;}
 function empty(msg,emoji='📭',kind=''){return `<div class="empty"><div class="art">${emoji}</div><h3>${msg}</h3><p>データを追加すると、ここに一覧が表示されます。<br>管理人の変更はクラウドに自動保存されます。</p>${kind?newBtn(kind,'最初の1件を追加'):''}</div>`;}
@@ -177,7 +177,7 @@ function invitesHtml(){if(!inviteList.length)return '<p class="hint">発行済�
 function pendingHtml(){return pendingList.map(m=>`<div class="private-request"><div><strong>${H(m.email||'Discordユーザー')}</strong><br><small>申請日時：${H(new Date(m.requested_at).toLocaleString('ja-JP'))}</small></div><div class="actions"><button class="btn sm primary" data-action="approve-request" data-id="${H(m.request_id)}">✓ 承認</button><button class="btn sm danger" data-action="deny-request" data-id="${H(m.request_id)}">✕ 拒否</button></div></div>`).join('')||'<p class="hint">承認待ちの申請はありません。</p>';}
 function membersHtml(){if(!viewerList.length)return '<p class="hint">読み込み中...</p>';return viewerList.map(m=>`<p style="font-size:11px;line-height:2">${H(m.email||'アカウント')} (${m.role==='owner'?'管理人':'閲覧者'}) ${m.role==='viewer'?`<button class="btn sm danger" data-action="remove-viewer" data-id="${H(m.user_id)}">アクセス解除</button>`:''}</p>`).join('')}
 function blockedHtml(){return blockedList.map(m=>`<p style="font-size:11px;line-height:2">${H(m.email||'アカウント')} <button class="btn sm" data-action="unblock-viewer" data-id="${H(m.user_id)}">ブロック解除</button></p>`).join('')||'<p class="hint">ブロックした閲覧者はいません。</p>';}
-function render(){if(!activeWorkspace)return;worldOptions();renderNav();document.getElementById('headerName').textContent=PAGES.find(x=>x[0]===page)?.[2]||'MC BASE';document.getElementById('page').innerHTML=({dashboard,worlds,coords,projects,items,villagers,farms,goals,machines,enchants,tools,map:mapPage,live:livePage,atlas,demo,unichat,device:devicePage,settings}[page]||dashboard)();if(page==='tools')updateTools();if(page==='machines')machinePreview();if(page==='map')drawMap();if(page==='device')renderWorldImportPreview();if(['live','map','atlas'].includes(page))liveRefresh();uRenderPageInit();document.getElementById('appRoot').classList.toggle('viewer',!isOwner());}
+function render(){if(!activeWorkspace)return;worldOptions();renderNav();document.getElementById('headerName').textContent=PAGES.find(x=>x[0]===page)?.[2]||'MC BASE';document.getElementById('page').innerHTML=({dashboard,worlds,coords,projects,items,villagers,farms,goals,machines,enchants,tools,map:mapPage,live:livePage,realms:realmsPage,atlas,demo,unichat,device:devicePage,settings}[page]||dashboard)();if(page==='tools')updateTools();if(page==='machines')machinePreview();if(page==='map')drawMap();if(page==='device')renderWorldImportPreview();if(['live','map','atlas'].includes(page))liveRefresh();if(['realms','map','atlas'].includes(page))realmsRefresh();uRenderPageInit();document.getElementById('appRoot').classList.toggle('viewer',!isOwner());}
 function fieldHtml([key,label,type,options,required],old){let v=old?.[key];if(v===undefined||v===null)v=(type==='select'?options[0]:type==='number'?(key==='y'?64:key==='target'?64:0):'');let control='';if(type==='select')control=`<select name="${key}" id="f_${key}">${options.map(o=>`<option value="${H(o)}" ${String(v)===String(o)?'selected':''}>${H(o)}</option>`).join('')}</select>`;else if(type==='textarea')control=`<textarea name="${key}" id="f_${key}" placeholder="${H(options||'')}">${H(v)}</textarea>`;else control=`<input id="f_${key}" name="${key}" type="${type}" ${type==='number'?'step="any"':''} value="${H(v)}" placeholder="${H(options||'')}" ${required?'required':''} maxlength="500">`;return `<div class="field ${type==='textarea'||(key==='note'&&type==='text')?'span2':''}"><label for="f_${key}">${label}${required?' *':''}</label>${control}</div>`;}
 function openEditor(kind,id=null){if(!isOwner())return toast('閲覧者には編集権限がありません。');if(kind!=='worlds'&&!getWorld())return toast('先にワールドを作成してください。');const old=id?db[kind].find(x=>x.id===id):null;if(id&&!old)return;editing=id;modalKind=kind;document.getElementById('modalTitle').textContent=`${old?'編集':'新規登録'}：${SCHEMA[kind].label}`;document.getElementById('modalBody').innerHTML=`<div class="form-grid">${SCHEMA[kind].fields.map(f=>fieldHtml(f,old)).join('')}</div>${kind==='worlds'&&!old?'<p class="hint">新しいワールドには標準の冒険目標10個が自動登録されます。</p>':''}`;document.getElementById('modalLayer').classList.add('show');document.getElementById('modalLayer').setAttribute('aria-hidden','false');document.getElementById('f_name')?.focus();}
 function closeModal(){document.getElementById('modalLayer').classList.remove('show');document.getElementById('modalLayer').setAttribute('aria-hidden','true');editing=modalKind=null;}
@@ -452,7 +452,7 @@ function drawMap(){const canvas=document.getElementById('mapCanvas');if(!canvas)
  for(let z=0;z<=rows;z++)for(let x=0;x<=cols;x++){const cx=startX+x,cz=startZ+z,pX=x*c,pY=z*c,slime=seed!==null&&java&&isSlime(seed,cx,cz);if(slime)count++;ctx.fillStyle=slime?'#3d8950':(x+z)%2===0?'#1d3024':'#1b2c22';ctx.fillRect(pX,pY,c-1,c-1);if(cx===0&&cz===0){ctx.fillStyle='#72bced';ctx.fillRect(pX+c/2-5,pY+c/2-5,10,10);}if(c>=31&&(cx%4===0||cz%4===0)){ctx.fillStyle='#a4b9a355';ctx.font='11px sans-serif';if(c>=35)ctx.fillText(`${cx*16}`,pX+3,pY+12);}}
  const visible=records('coords').filter(a=>a.dimension==='オーバーワールド');
  for(const m of visible){const x=(Number(m.x)/16-startX)*c,z=(Number(m.z)/16-startZ)*c;if(x<0||z<0||x>cw||z>ch)continue;ctx.beginPath();ctx.arc(x,z,6,0,Math.PI*2);ctx.fillStyle=m.category==='スポナー'?'#fe7d91':m.category==='バイオーム'?'#b6a5f8':'#efbe74';ctx.fill();ctx.strokeStyle='#07160e';ctx.lineWidth=2;ctx.stroke();if(c>=24){ctx.fillStyle='#f8f3d8';ctx.font='bold 12px sans-serif';ctx.fillText(String(m.name||'').slice(0,11),x+9,z-8);}}
- liveOverlay(ctx,a=>(a/16-startX)*c,b=>(b/16-startZ)*c,'オーバーワールド',cw,ch);
+ liveOverlay(ctx,a=>(a/16-startX)*c,b=>(b/16-startZ)*c,'オーバーワールド',cw,ch);realmsOverlay(ctx,a=>(a/16-startX)*c,b=>(b/16-startZ)*c,'オーバーワールド',cw,ch);
  const label=document.getElementById('mapPosition');if(label)label.textContent=`中心 X: ${ccx*16} / Z: ${ccz*16}　・　1マス＝16×16ブロック　・　表示中のスライムチャンク ${seed!==null&&java?count+'個':'未表示'}`;
  if(!canvas.dataset.bound){canvas.dataset.bound='1';canvas.addEventListener('pointerdown',e=>{mapDrag={x:e.clientX,z:e.clientY,cx:mapCenterX,cz:mapCenterZ};canvas.setPointerCapture(e.pointerId)});canvas.addEventListener('pointerup',e=>{if(!mapDrag)return;const ratio=canvas.width/canvas.getBoundingClientRect().width;mapCenterX=mapDrag.cx-(e.clientX-mapDrag.x)*ratio/mapCell*16;mapCenterZ=mapDrag.cz-(e.clientY-mapDrag.z)*ratio/mapCell*16;mapDrag=null;drawMap();});canvas.addEventListener('pointercancel',()=>mapDrag=null);}
 }
@@ -582,7 +582,7 @@ function uDrawAtlas(){const c=document.getElementById('uAtlasCanvas');if(!c)retu
   const x=px(Number(m.x)),y=py(Number(m.z));if(x<-25||y<-25||x>W+25||y>Z+25)continue;
   ctx.fillStyle=m.category==='スポナー'?'#f87171':m.category==='バイオーム'?'#c084fc':'#fde68a';ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#0f1a13';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#fff';ctx.font='bold 13px system-ui';ctx.fillText(String(m.name).slice(0,18),x+10,y-9);
  }
- liveOverlay(ctx,px,py,dim,W,Z);
+ liveOverlay(ctx,px,py,dim,W,Z);realmsOverlay(ctx,px,py,dim,W,Z);
  const el=document.getElementById('uAtlasStatus');if(el)el.textContent=`中心 X ${Math.round(cx)} / Z ${Math.round(cz)} ・ 画像${U.atlasImage?'あり':'なし'} ・ ${dim}`;
 }
 async function uUploadMap(){if(!isOwner())return toast('地図の登録は管理人のみです。');const file=document.getElementById('uMapFile')?.files?.[0];if(!file)return toast('地図画像を選択してください。');if(file.size>10*1024*1024)return toast('画像は10MB以下にしてください。');if(!['image/png','image/jpeg','image/webp'].includes(file.type))return toast('PNG/JPG/WEBPのみ対応です。');
@@ -697,5 +697,96 @@ actionHandlers['live-copy']=()=>{if(LIVE.token)clipboard(LIVE.token);};
 actionHandlers['live-revoke']=async()=>{if(!isOwner()||!confirm('連携を無効化しますか？'))return;const {error}=await cloud.rpc('mc_revoke_live_connector',{p_workspace_id:activeWorkspace.id});if(error)return toast(error.message);LIVE.token='';document.getElementById('liveSecret').textContent='';toast('連携を無効にしました');};
 actionHandlers['live-name']=async e=>{if(!isOwner())return;const name=e.closest('.live-site').querySelector('.live-name').value.trim();if(!name)return toast('名前を入力してください');const {error}=await cloud.from('mc_build_areas').update({label:name,verified:true}).eq('workspace_id',activeWorkspace.id).eq('world_id',db.selectedWorld).eq('area_key',e.dataset.key);if(error)return toast(error.message);toast('保存しました');await liveRefresh();};
 setInterval(()=>{if(activeWorkspace&&['live','map','atlas'].includes(page))liveRefresh();},12000);
+
+/* Realms manual sharing; NO access to Realm game server / real-time API. */
+const REALMS={locations:[],activity:[],key:'',busy:false};
+function realmsPage(){
+ if(!getWorld())return pageGuard();
+ const owner=isOwner();
+ return heading('Realms共有','位置を自分で登録し、承認されたメンバーとクラウドで共有します。')
+ +'<div class="u-notice"><b>🛰️ Realmsモード</b>：ゲーム内の位置や所持品を自動取得するものではありません。MC BASEに登録した座標は、共有を許可した場合のみ他の承認済みメンバーの画面・内部マップに表示されます。</div>'
+ +'<div class="twocol"><section class="panel" style="padding:16px"><h3>📍 自分の現在地を報告</h3>'
+ +'<form id="realmsPositionForm"><label>プレイヤー名<input name="player_name" maxlength="80" required placeholder="Minecraftの名前"></label>'
+ +'<label>次元<select name="dimension"><option>オーバーワールド</option><option>ネザー</option><option>エンド</option></select></label>'
+ +'<div class="u-2cols"><label>X<input type="number" name="x" required></label><label>Y<input type="number" name="y" required></label><label>Z<input type="number" name="z" required></label></div>'
+ +'<label style="display:flex;gap:8px;margin:12px 0"><input type="checkbox" name="share_enabled" style="width:auto">承認済みメンバーに座標を共有する</label>'
+ +'<button class="btn primary" type="submit">座標を保存</button> <button type="button" class="btn" data-action="realms-hide">共有をオフ</button></form></section>'
+ +'<section class="panel" style="padding:16px"><h3>📝 活動記録</h3><p class="hint">プレイした内容を報告してください。Realmsからの自動取得ではありません。</p>'
+ +'<form id="realmsLogForm"><label>分類<select name="category"><option>建築</option><option>採掘</option><option>探索</option><option>資材</option><option>その他</option></select></label>'
+ +'<label>内容<textarea name="detail" maxlength="300" required rows="3" placeholder="例：ネザー要塞を発見"></textarea></label>'
+ +'<button class="btn primary" type="submit">活動を記録</button></form>'
+ +(owner?'<button style="margin-top:12px" class="btn" data-action="realms-new-building">＋ 建築物の座標をマップへ登録</button>':'')
+ +'</section></div><section class="panel" style="padding:16px;margin-top:16px"><h3>🧭 共有されている座標</h3><small id="realmsStamp">読み込み中</small><div id="realmsRows"></div><h3>📜 活動履歴</h3><div id="realmsLogs"></div></section>';
+}
+function realmsAgo(t){const d=Math.max(0,Math.floor((Date.now()-Date.parse(t))/60000));return Number.isFinite(d)?d<60?d+'分前':Math.floor(d/60)+'時間前':'不明';}
+function realmsRender(){
+ const rows=document.getElementById('realmsRows'),logs=document.getElementById('realmsLogs');
+ if(rows){
+  rows.innerHTML=REALMS.locations.map(p=>'<div class="recent-row"><span><strong>'+(p.user_id===session.user.id?'👤 ':'📍 ')+H(p.player_name)+'</strong><small>'+H(p.dimension)+' / '+realmsAgo(p.updated_at)+' / '+(p.share_enabled?'公開中':'本人のみ')+' / 手動入力</small></span><b>X '+p.x+' Y '+p.y+' Z '+p.z+'</b></div>').join('')||'<p class="hint">共有中の座標はまだありません。</p>';
+  const mine=REALMS.locations.find(p=>p.user_id===session.user.id),form=document.getElementById('realmsPositionForm');
+  if(mine&&form&&!form.dataset.prefilled){for(const field of ['player_name','dimension','x','y','z'])form.elements.namedItem(field).value=mine[field];form.elements.namedItem('share_enabled').checked=mine.share_enabled;form.dataset.prefilled='1';}
+  const stamp=document.getElementById('realmsStamp');if(stamp)stamp.textContent='クラウド読込：'+new Date().toLocaleTimeString('ja-JP');
+ }
+ if(logs)logs.innerHTML=REALMS.activity.map(a=>'<div class="recent-row"><span><b>'+H(a.category)+'</b> '+H(a.detail)+'</span><small>'+realmsAgo(a.created_at)+'</small></div>').join('')||'<p class="hint">活動の記録はありません。</p>';
+}
+async function realmsRefresh(){
+ if(!activeWorkspace||!cloud||!db.selectedWorld||REALMS.busy)return;
+ const key=activeWorkspace.id+':'+db.selectedWorld;
+ if(REALMS.key!==key){REALMS.key=key;REALMS.locations=[];REALMS.activity=[];}
+ REALMS.busy=true;
+ try{
+  const ws=activeWorkspace.id,w=db.selectedWorld;
+  const a=await Promise.all([
+   cloud.from('mc_realms_positions').select('user_id,player_name,dimension,x,y,z,share_enabled,updated_at').eq('workspace_id',ws).eq('world_id',w).order('updated_at',{ascending:false}).limit(60),
+   cloud.from('mc_realms_activity').select('id,user_id,category,detail,created_at').eq('workspace_id',ws).eq('world_id',w).order('created_at',{ascending:false}).limit(60)
+  ]);
+  if(a[0].error||a[1].error)throw a[0].error||a[1].error;
+  if(REALMS.key!==key)return;
+  REALMS.locations=a[0].data||[];REALMS.activity=a[1].data||[];
+  realmsRender();if(page==='map')drawMap();if(page==='atlas')uDrawAtlas();
+ }catch(err){const e=document.getElementById('realmsRows');if(e)e.textContent='読み込みエラー：'+String(err.message||err);}
+ finally{REALMS.busy=false;}
+}
+function realmsOverlay(ctx,px,py,dimension,W,H){
+ if(REALMS.key!==activeWorkspace?.id+':'+db.selectedWorld)return;
+ for(const p of REALMS.locations.filter(x=>x.share_enabled&&x.dimension===dimension)){
+  const x=px(p.x),y=py(p.z);if(x<0||y<0||x>W||y>H)continue;
+  ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fillStyle='#9de8ff';ctx.fill();
+  ctx.strokeStyle='#103644';ctx.lineWidth=2;ctx.stroke();ctx.fillStyle='#e9faff';ctx.font='bold 11px sans-serif';
+  ctx.fillText(('手動: '+p.player_name).slice(0,18),x+10,y+10);
+ }
+}
+function realmsNumber(form,key){const s=String(form.elements.namedItem(key).value);const v=Number(s);if(!s.trim()||!Number.isSafeInteger(v)||Math.abs(v)>30000000)throw Error('座標を正しい整数で入力してください');return v;}
+async function realmsSavePosition(e){
+ e.preventDefault();if(!activeWorkspace||!session)return;
+ try{
+  const form=e.target,n=String(form.elements.namedItem('player_name').value).trim().slice(0,80);if(!n)throw Error('プレイヤー名を入力してください');
+  const row={workspace_id:activeWorkspace.id,world_id:db.selectedWorld,user_id:session.user.id,player_name:n,
+   dimension:form.elements.namedItem('dimension').value,x:realmsNumber(form,'x'),y:realmsNumber(form,'y'),z:realmsNumber(form,'z'),
+   share_enabled:form.elements.namedItem('share_enabled').checked,updated_at:new Date().toISOString()};
+  const {error}=await cloud.from('mc_realms_positions').upsert(row,{onConflict:'workspace_id,world_id,user_id'});if(error)throw error;
+  toast('位置を保存しました（手動報告）');await realmsRefresh();
+ }catch(e){toast('保存失敗：'+String(e.message||e));}
+}
+async function realmsSaveLog(e){
+ e.preventDefault();if(!activeWorkspace||!session)return;
+ const f=e.target,detail=String(f.elements.namedItem('detail').value).trim().slice(0,300);if(!detail)return;
+ const {error}=await cloud.from('mc_realms_activity').insert({workspace_id:activeWorkspace.id,world_id:db.selectedWorld,user_id:session.user.id,category:f.elements.namedItem('category').value,detail});
+ if(error)return toast('記録できません：'+error.message);
+ f.reset();toast('活動を記録しました');await realmsRefresh();
+}
+actionHandlers['realms-hide']=async()=>{
+ if(!session||!activeWorkspace)return;
+ const {error}=await cloud.from('mc_realms_positions').update({share_enabled:false,updated_at:new Date().toISOString()}).eq('workspace_id',activeWorkspace.id).eq('world_id',db.selectedWorld).eq('user_id',session.user.id);
+ if(error)return toast(error.message);const f=document.getElementById('realmsPositionForm');if(f)f.elements.namedItem('share_enabled').checked=false;
+ toast('位置共有をオフにしました');await realmsRefresh();
+};
+actionHandlers['realms-new-building']=()=>{if(!isOwner())return toast('管理者のみ座標登録ができます');changePage('coords');openEditor('coords');};
+document.addEventListener('submit',e=>{
+ if(e.target.id==='realmsPositionForm')void realmsSavePosition(e);
+ if(e.target.id==='realmsLogForm')void realmsSaveLog(e);
+});
+setInterval(()=>{if(activeWorkspace&&['realms','map','atlas'].includes(page))void realmsRefresh();},12000);
+
 bootCloud();
 })();
