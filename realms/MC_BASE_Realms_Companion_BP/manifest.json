@@ -1,0 +1,41 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "MC BASE Realms Companion",
+    "description": "Realms-friendly local activity tracker with offline sync codes for MC BASE",
+    "uuid": "0b1b6baf-b69f-4bed-9ff3-2a1988c019bf",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      80
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "b7e99de7-fc70-44d0-9a1e-2893ced352cc",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    },
+    {
+      "module_name": "@minecraft/server-ui",
+      "version": "2.0.0"
+    }
+  ]
+}
