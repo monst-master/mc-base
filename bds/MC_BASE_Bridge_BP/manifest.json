@@ -1,0 +1,45 @@
+{
+  "format_version": 2,
+  "header": {
+    "name": "MC BASE Live Bridge",
+    "description": "BDS-only telemetry for authorized MC BASE workspaces",
+    "uuid": "e6649951-82ea-44f0-a02b-74694b0644ac",
+    "version": [
+      1,
+      0,
+      0
+    ],
+    "min_engine_version": [
+      1,
+      21,
+      0
+    ]
+  },
+  "modules": [
+    {
+      "type": "script",
+      "language": "javascript",
+      "uuid": "04ce7891-2c19-4168-bf44-0eb810c89bf5",
+      "version": [
+        1,
+        0,
+        0
+      ],
+      "entry": "scripts/main.js"
+    }
+  ],
+  "dependencies": [
+    {
+      "module_name": "@minecraft/server",
+      "version": "2.0.0"
+    },
+    {
+      "module_name": "@minecraft/server-net",
+      "version": "1.0.0-beta"
+    },
+    {
+      "module_name": "@minecraft/server-admin",
+      "version": "1.0.0-beta"
+    }
+  ]
+}
