@@ -1,2 +1,2 @@
-# mc-base
-MC BASE private Minecraft world management
+# MC BASE v4.2
+Minecraft統合版向け管理Webアプリです。アカウント認証・管理者承認・データ保存はSupabaseで行います。利用開始にはDiscord OAuthと管理者ユーザー登録が必要です。GitHub Pagesの公開リポジトリはソースコードのみで、ユーザーのワールドデータは含みません。
