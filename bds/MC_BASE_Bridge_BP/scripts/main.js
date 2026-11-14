@@ -67,8 +67,10 @@ async function flush() {
   })):[];
   const inventory=shareInventory&&(cycles%4===0)?players.slice(0,20).map(inventorySnapshot).filter(Boolean):[];
   // Position updates every ~5 sec; inventory snapshots every ~20 sec.
+  const safeEvents=sharePositions?events:events.map(({x,y,z,...rest})=>rest);
   const body=JSON.stringify({workspace_id:workspaceId,world_id:worldId,
-   players:positions,inventory,events,sites});
+   share_positions:sharePositions,share_inventory:shareInventory,
+   players:positions,inventory,events:safeEvents,sites:sharePositions?sites:[]});
   const req=new HttpRequest(endpoint);
   req.method=HttpRequestMethod.Post;
   req.body=body;
